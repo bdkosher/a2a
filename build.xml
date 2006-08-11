@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="apples2apples_java" default="build" basedir=".">
+  <description>Builds, tests, and runs the project apples2apples_java.</description>
+
+	<target name="init">
+		<property file="build.properties"/>
+	</target>
+	
+	<target name="clean" depends="init"
+				description="Cleans any generated files.">
+		<delete dir="${build.dir}"/>
+		<delete dir="${doc.dir}"/>
+		<delete>
+			<fileset dir="${basedir}" includes="junitvmwatcher*.properties"/>
+		</delete>
+	</target>
+	
+	<target name="compile" depends="init"
+				description="Compiles the source code.">
+		<mkdir dir="${classes.dir}"/>
+		<javac srcdir="${java.src.dir}" destdir="${classes.dir}" source="${java.source}" target="${java.target}">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="*.jar"/>
+      </classpath>
+		</javac>
+		<copy todir="${classes.dir}">
+			<fileset dir="${resources.dir}" includes="**/*.*"/>
+		</copy>
+	</target>
+	
+	<target name="build" depends="init,compile"
+				description="Builds a jar of the compiled source.">
+		<jar destfile="${build.dir}/${jar.name}">
+			<fileset dir="${classes.dir}" includes="**/*.*"/>
+		</jar>
+	</target>
+	
+	<target name="compile-tests" depends="init"
+				description="Compiles the test classes">
+		<mkdir dir="${test.build.dir}"/>
+		<javac srcdir="${test.src.dir}" destdir="${test.build.dir}" source="${java.source}" target="${java.target}">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="*.jar"/>
+				<fileset dir="${test.lib.dir}" includes="*.jar"/>
+				<pathelement path="${classes.dir}"/>
+      </classpath>
+		</javac>
+	</target>
+	
+	<target name="test" depends="init,compile,compile-tests"
+				description="Executes the test classes">
+		<junit failureproperty="test.failed"> 
+			<classpath>
+				<fileset dir="${lib.dir}" includes="*.jar"/>
+				<fileset dir="${test.lib.dir}" includes="*.jar"/>
+				<pathelement path="${classes.dir}"/>
+				<pathelement path="${test.build.dir}/"/>
+      </classpath>
+			<formatter type="xml"/>
+		  <batchtest fork="yes" todir="${test.build.dir}">
+		    <fileset dir="${test.build.dir}">
+		      <include name="**/*Test.class"/>
+		    	<exclude name="**/*$*.class"/> <!-- ignore inner classes -->
+		    </fileset>
+		  </batchtest>
+		</junit>
+		
+		<mkdir dir="${test.report.dir}"/>
+		<junitreport todir="${test.report.dir}">
+			<fileset dir="${test.build.dir}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${test.report.dir}"/>
+		</junitreport>
+		
+		<property name="test.report.loc" location="${test.report.dir}"/>
+		<exec executable="${browser.exec}" spawn="true">
+		    <arg value="${test.report.loc}/index.html"/>
+		</exec>
+				
+		<fail message="One or more tests failed" if="test.failed"/>
+	</target>
+	
+	<target name="javadoc" depends="init">
+		<mkdir dir="${javadoc.dir}"/>
+		<javadoc destdir="${javadoc.dir}">
+			<fileset dir="${java.src.dir}" includes="**/*.java"/>
+		</javadoc>
+	</target>
+	
+</project>
