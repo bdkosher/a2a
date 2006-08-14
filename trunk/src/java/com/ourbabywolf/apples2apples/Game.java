@@ -45,27 +45,38 @@ public class Game {
 	 *  </pre>
 	 *  The game can be terminated at any time, however, so it's possible
 	 *  to move from any non-GAME_OVER state to the GAME_OVER state.
-	 *  
 	 */
 	private enum GamePhase {
-		INIT, /* Gathering players and preparing decks. */
-		ROUND_PLAY, /* Players can play their RedApples. */
-		ROUND_JUDGE, /* Played RedApples are awaiting judgement. */
-		ROUND_OVER, /* After the judge has selected the winner. */
-		GAME_OVER, /* Final state, waiting for restart. */
-		SUSPENDED /* When the round can't continue. */
+		/** Gathering players. */
+		INIT, 
+		/** Players can play their RedApples. */
+		ROUND_PLAY, 
+		/** Played RedApples are awaiting judgement. */
+		ROUND_JUDGE,
+		/** After the judge has selected the winner. */
+		ROUND_OVER,
+		/** Final state, waiting for restart. */
+		GAME_OVER,
+		/** When the round can't continue. */
+		SUSPENDED 
 	};
 
 	/**
-	 * Status codes for operation calls to alert client of success of method
-	 * call.
+	 * Status codes indicating the result of the method execution.
 	 */
 	public enum Result {
-		SUCCESS, /* the method was successful */
-		ERROR_GAME_UNINITIALIZED, /* the method could not be executed because the game isn't set up yet. */
-		ERROR_PROHIBITED, /* the method call is not allowed at this time. */
-		NO_EFFECT, /* the method execution had no effect. */
-		ERROR_INVALID_PARAMETER /* method parameter(s) were invalid */
+		/** The method call was successful. */
+		SUCCESS, 
+		/** The method call failed to execute because the game lacked 
+		 * something, such as not having enough players. */
+		ERROR_GAME_UNINITIALIZED,
+		/** The method call failed to execute because it is not allowed 
+		 * at this time. */
+		ERROR_PROHIBITED,
+		/** Calling the method execution had no effect. */
+		NO_EFFECT, 
+		/** The method call failed because its parameter(s) were invalid. */
+		ERROR_INVALID_PARAMETER 
 	}
 
 	/** The current state of the game. */
