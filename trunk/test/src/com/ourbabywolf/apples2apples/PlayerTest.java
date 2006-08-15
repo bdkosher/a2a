@@ -63,6 +63,12 @@ public class PlayerTest {
 		new Player("");
 	}
 	
+	@Test(expected=UnsupportedOperationException.class)
+	public void testGetHandUnmodifiability() {
+		Player p = new Player("p");
+		p.getHand().add(new RedApple("test"));
+	}
+	
 	@Test
 	public void testNick() {
 		Player caleb = new Player("caleb", null);
@@ -101,7 +107,7 @@ public class PlayerTest {
 		assertNull("Null, never index out of bounds.", katie.getAppleFromHand(1));
 		String word = "Mommy";
 		RedApple ra = new RedApple(word);
-		katie.getHand().add(ra);
+		katie.dealApple(ra);
 		assertNotNull("one apple hand shouldn't return null by idx 0.", katie.getAppleFromHand(0));
 		assertEquals("successful inspection by index shouldn't change hand size", 1, katie.getHand().size());
 		assertEquals("one apple hand should return correct apple by idx 0.", ra, katie.getAppleFromHand(0));
@@ -114,7 +120,7 @@ public class PlayerTest {
 		assertEquals("unsuccessful inspection by word shouldn't change hand size", 1, katie.getHand().size());
 		assertEquals("indexing and by word should yield same result.", katie.getAppleFromHand(0), katie.getAppleFromHand(word));
 		
-		katie.getHand().add(ra);
+		katie.dealApple(ra);
 		assertEquals("Duplicate red apples should be allowed.", 2, katie.getHand().size());
 		assertEquals("two apple hand w/ dups should return correct apple by idx 0.", ra, katie.getAppleFromHand(0));
 		assertEquals("two apple hand w/ dups should return correct apple by idx 1.", ra, katie.getAppleFromHand(1));

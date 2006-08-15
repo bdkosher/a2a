@@ -141,7 +141,7 @@ public class Player {
      * Returns all the RedApples in the player's hand.
      */
     public List<RedApple> getHand() {
-        return hand;
+        return Collections.unmodifiableList(hand);
     }
     
     /**
