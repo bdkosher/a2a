@@ -69,6 +69,12 @@ public class PlayerTest {
 		p.getHand().add(new RedApple("test"));
 	}
 	
+	@Test(expected=UnsupportedOperationException.class)
+	public void testGetGreenApplesUnmodifiability() {
+		Player p = new Player("p");
+		p.getGreenApples().add(new GreenApple("test"));
+	}
+	
 	@Test
 	public void testNick() {
 		Player caleb = new Player("caleb", null);

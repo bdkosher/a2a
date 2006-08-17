@@ -33,7 +33,7 @@ public class Player {
     private final List<RedApple> hand;
     
     /** The GreenApple (adjectives) the player has won mapped to the RedApples used to win them. */
-    private Map<GreenApple, RedApple> greenAppleMap;
+    private final Map<GreenApple, RedApple> greenAppleMap;
     
     /** The number of rounds the player has played. */
     private int roundsPlayed = 0;
@@ -64,6 +64,7 @@ public class Player {
         this.id = id;
         this.nick = nick;
         this.hand = new ArrayList<RedApple>();
+        this.greenAppleMap = new HashMap<GreenApple, RedApple>();
     }
     
     /** 
@@ -188,7 +189,7 @@ public class Player {
      * @return true if the apple was in the hand and removed, false otherwise
      */
     protected boolean playApple(RedApple apple) {
-       return hand.remove(apple);
+      return hand.remove(apple);
     }
     
     /**
@@ -205,7 +206,7 @@ public class Player {
      * Returns the point cards the player has been awarded. 
      */
     public Set<GreenApple> getGreenApples() {
-        return greenAppleMap.keySet();
+        return Collections.unmodifiableSet(greenAppleMap.keySet());
     }
     
     /**
@@ -219,9 +220,6 @@ public class Player {
      * Adds the card to this players points pile.
      */
     protected void awardPoint(GreenApple point, RedApple winner) {
-        if (greenAppleMap == null) {
-        	greenAppleMap = new HashMap<GreenApple, RedApple>();
-        }
         greenAppleMap.put(point, winner);
     }
     
