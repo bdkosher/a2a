@@ -150,9 +150,12 @@ public class Game {
 	 *            apple deck
 	 * @param green
 	 *            apple deck
+	 * @throws GameConfigurationException - if the configuration 
+	 * 		contains some invalid parameters            
 	 */
 	public Game(GameEventListener eventListener, GameConfiguration config,
-			Deck<RedApple> redApples, Deck<GreenApple> greenApples) {
+			Deck<RedApple> redApples, Deck<GreenApple> greenApples) 
+			throws GameConfigurationException  {
 		if (eventListener == null) {
 			throw new IllegalArgumentException(
 					"GameEventListener cannot be null.");
@@ -164,6 +167,7 @@ public class Game {
 					"GameConfiguration cannot be null.");
 		}
 		this.config = config;
+		verifyConfig();
 
 		if (redApples == null) {
 			throw new IllegalArgumentException("RedApples Deck cannot be null.");
@@ -185,6 +189,45 @@ public class Game {
 				.getMaxNbrOfPlayers());
 	}
 	
+	/**
+	 * Verifies that the GameConfiguration is OK.
+	 * 
+	 * @throws Exception - if there is something wrong with the
+	 * 		configuration.
+	 */
+	private void verifyConfig() throws GameConfigurationException {
+		final int minNumberOfCardsPerHand = 1;
+		if (config.getCardsPerHand() < minNumberOfCardsPerHand) {
+			throw new GameConfigurationException("Number of cards per hand", 
+					config.getCardsPerHand(), minNumberOfCardsPerHand);
+		}
+		final int minNumberOfPlayers = 2;
+		if (config.getMinNbrOfPlayers() < minNumberOfPlayers) {
+			throw new GameConfigurationException("Minimum number of players",
+					config.getMinNbrOfPlayers(), minNumberOfPlayers);
+		}
+		final int maxNumberOfPlayers = minNumberOfPlayers;
+		if (config.getMaxNbrOfPlayers() < maxNumberOfPlayers) {
+			throw new GameConfigurationException("Maximum number of players",
+					config.getMaxNbrOfPlayers(), maxNumberOfPlayers);
+		}
+	}
+	
+	/**
+	 * Verifies that the GameConfiguration in regards to the number of points
+	 * needed to win is OK.
+	 * 
+	 * @throws Exception - if there is something wrong with the
+	 * 		configuration.
+	 */
+	private void verifyNbrOfPointsNeededToWinConfig() throws GameConfigurationException {
+		final int minNumberOfPoints = 1;
+		if (config.getPointsNeededToWin(players.size()) < minNumberOfPoints) {
+			throw new GameConfigurationException(players.size(), 
+					this.config.getCardsPerHand(), minNumberOfPoints);
+		}
+	}
+
 	/**
 	 * Returns the GameConfiguration used to construct this game.
 	 * @return
@@ -345,6 +388,7 @@ public class Game {
 					pointsNeededToWin = newPointsNeededToWin;
 					/* If for some reason the points drop, check if there's a winner. */
 					if (isStarted()) {
+						verifyNbrOfPointsNeededToWinConfig();
 						checkForGameWinner(false);
 					}
 				}
@@ -844,6 +888,7 @@ public class Game {
 		}
 		replenishHands();
 		if (!isStarted() && config.fixPointsNeededToWinAtStart()) {
+			verifyNbrOfPointsNeededToWinConfig();
 			pointsNeededToWin = config.getPointsNeededToWin(players.size());
 		}
 		setJudge();
@@ -919,7 +964,9 @@ public class Game {
 				|| !player.isAbleToPlay()) {
 			return Result.ERROR_PROHIBITED;
 		} 
-			
+		if (!player.isActive()) {
+			activatePlayer(player);
+		}	
 		if (player.playApple(apple)) {
 			applesToJudge.put(player, apple);
 			eventListener.applePlayed(player, apple);
@@ -942,14 +989,21 @@ public class Game {
 	public Result judge(RedApple selected) {
 		if (selected == null || !applesToJudge.containsValue(selected)) {
 			return Result.ERROR_INVALID_PARAMETER;
-		} else if (phase != GamePhase.ROUND_JUDGE) {
+		} else if (judge == null) {
+			return Result.ERROR_GAME_UNINITIALIZED;
+		} else if (!isTimeToJudge()) {
 			return Result.ERROR_PROHIBITED;
+		}
+		/* Activate the judge if necessary */
+		if (!judge.isActive()) {
+			activatePlayer(judge);
 		}
 		/* there's a possibility mulitple players played the same apple. */
 		Set<Player> winners = new HashSet<Player>(players.size());
 		for (Player p : applesToJudge.keySet()) {
 			if (selected.equals(applesToJudge.get(p))) {
 				winners.add(p);
+				log.fine("Awarding point to " + p);
 				p.awardPoint(greenApple, selected);
 				p.incrementRoundsPlayed();
 			}
@@ -962,6 +1016,7 @@ public class Game {
 			eventListener.roundWonByMultiplePlayers(judge, winners, selected, greenApple);
 		}
 		
+		/* End the round. */
 		phase = GamePhase.ROUND_OVER;
 		++roundsPlayed;
 		if (config.autoStartRound()) {

@@ -293,7 +293,7 @@ public class GameTest {
 	@Test
 	public void testGetPlayer() {
 		Game game = new Game(new CountingEventListener(), new EZGameConfiguration(
-				false, false, 1, 2, 1, 1, false, false, false
+				false, false, 1, 2, 2, 2, false, false, false
 				), redApples, greenApples);
 		
 		Player bob = game.getPlayer("bob");
@@ -325,7 +325,7 @@ public class GameTest {
 	@Test(expected=UnsupportedOperationException.class)
 	public void testPlayersUnmodifiability() {
 		Game game = new Game(new CountingEventListener(), 
-				new EZGameConfiguration(false, false, 1, 12, 1, 1, true, false, false), 
+				new EZGameConfiguration(false, false, 1, 12, 2, 2, true, false, false), 
 				redApples, greenApples);
 		game.join("joe");
 		game.join("katie");
@@ -335,7 +335,7 @@ public class GameTest {
 	@Test(expected=UnsupportedOperationException.class)
 	public void testActivePlayersUnmodifiability() {
 		Game game = new Game(new CountingEventListener(), 
-				new EZGameConfiguration(false, false, 1, 12, 1, 1, true, false, false), 
+				new EZGameConfiguration(false, false, 1, 12, 2, 2, true, false, false), 
 				redApples, greenApples);
 		game.join("joe");
 		game.join("katie");
@@ -345,7 +345,7 @@ public class GameTest {
 	@Test
 	public void testActivePlayers() {
 		CountingEventListener cel = new CountingEventListener();
-		GameConfiguration config = new EZGameConfiguration(false, false, 3, 12, 3, 1, true, false, false);
+		GameConfiguration config = new EZGameConfiguration(false, false, 3, 12, 3, 2, true, false, false);
 		Game game = new Game(cel, config, redApples, greenApples);
 		game.join("joe");
 		Player joe = game.getPlayer("joe");
@@ -392,6 +392,11 @@ public class GameTest {
 		assertEquals("Katie can join game during play.", Game.Result.SUCCESS, game.activatePlayer(katie));
 		game.play(katie, caleb.getAppleFromHand(0));
 		game.play(joe, caleb.getAppleFromHand(0));
+	}
+	
+	@Test
+	public void testIndirectReactivation() {
+		// TODO - if you play, you become active.  If you judge and you're the judge, you become active
 	}
 	
 	@Test
@@ -486,7 +491,7 @@ public class GameTest {
 	@Test
 	public void testPlayingApples() {
 		CountingEventListener cel = new CountingEventListener();
-		GameConfiguration config = new EZGameConfiguration(false, false, 1, 5, 3, 1, false, true, false);
+		GameConfiguration config = new EZGameConfiguration(false, false, 7, 7, 3, 2, false, true, true);
 		Game game = new Game(cel, config, redApples, greenApples);
 		
 		game.join("joe");
@@ -527,25 +532,82 @@ public class GameTest {
 		assertEquals("Joshua should be able to play RedApple.", Game.Result.SUCCESS, game.play(joshua, apple));
 		assertEquals("Joshua should have triggered apple played event.", 3, cel.applePlayedEventCounter);
 		assertTrue("Everyone has played apples.", game.getPlayersWhoHaveNotPlayedRedApples().isEmpty());
-		assertTrue("Everone has played apples.", game.getPlayersWhoHaveNotPlayedRedApples().size() == 0);
+		assertTrue("No one is left who hasn't played apples.", game.getPlayersWhoHaveNotPlayedRedApples().size() == 0);
 		assertTrue("It should be time to judge.", game.isTimeToJudge());
 		assertEquals("Ready-to-judge event should be fired.", 1, cel.readyToJudgeEventCounter);
+		
+		assertEquals("Can't play cards during judgement phase.", Game.Result.ERROR_PROHIBITED, game.play(joe, apple));
+		assertEquals("Patrick should be able to join during game.", Game.Result.SUCCESS, game.join("patrick"));
+		Player patrick = game.getPlayer("patrick");
+		assertTrue("Patrick hasn't played apples.", game.getPlayersWhoHaveNotPlayedRedApples().contains(patrick));
+		assertTrue("Even though Patrick hasn't played yet, it should be time to judge.", game.isTimeToJudge());
+		assertTrue("Patrick has no cards yet.", patrick.getHand().isEmpty());
+		assertEquals("Patrick joined during judgement phase, and shouldn't be able to play apple.", Game.Result.ERROR_PROHIBITED, game.play(patrick, apple));
+		
+		/* end this round */
+		assertEquals("Judgement should succeed.", Game.Result.SUCCESS, game.judge(apple));
+		assertEquals("Round won by multiple players event should have been fired.", 1, cel.roundWonByMultiplePlayersEventCounter);
+		assertFalse("Joe should have been awarded green apple.", joe.getGreenApples().isEmpty());
+		assertFalse("Caleb should have been awarded green apple.", caleb.getGreenApples().isEmpty());
+		assertFalse("Joshua should have been awarded green apple.", joshua.getGreenApples().isEmpty());
+		assertTrue("Fred should not have been awarded green apple.", fred.getGreenApples().isEmpty());
+		assertTrue("Patrick should not have been awarded green apple.", patrick.getGreenApples().isEmpty());
+		assertTrue("Katie should not have been awarded green apple.", katie.getGreenApples().isEmpty());
+		
+		/* and start a new one */
+		game.startRound();
+		assertTrue("No one has played apples for round 2.", game.getPlayersWhoHaveNotPlayedRedApples().size() == game.getPlayers().size() - 1 /* minus 1 for the judge */);
+		assertTrue("Fred should be able to play now.", fred.isAbleToPlay());
+		assertFalse("Fred should have been dealt cards.", fred.getHand().isEmpty());
+		assertTrue("Patrck should be able to play now.", patrick.isAbleToPlay());
+		assertFalse("Patrick should have been dealt cards.", patrick.getHand().isEmpty());
+		
+		/* Deactivate fred before play. */
+		assertEquals("Fred can be deactivated.", Game.Result.SUCCESS, game.inactivatePlayer(fred));
+		assertEquals("Joshua should be able to play RedApple again.", Game.Result.SUCCESS, game.play(joshua, apple));
+		assertEquals("Joshua should have triggered apple played event again.", 4, cel.applePlayedEventCounter);
+		assertEquals("Joshua can't play twice.", Game.Result.ERROR_PROHIBITED, game.play(joshua, apple));
+		assertEquals("Joshua should not have triggered apple played event again.", 4, cel.applePlayedEventCounter);
+		assertEquals("Caleb should be able to play RedApple again.", Game.Result.SUCCESS, game.play(caleb, apple));
+		assertEquals("Caleb should have triggered apple played event again.", 5, cel.applePlayedEventCounter);
+		assertEquals("Patrick should be able to play RedApple again.", Game.Result.SUCCESS, game.play(patrick, apple));
+		assertEquals("Patrick should have triggered apple played event again.", 6, cel.applePlayedEventCounter);
+		assertEquals("Patrick can be deactivated.", Game.Result.SUCCESS, game.inactivatePlayer(patrick));
+		assertEquals("Joe should be able to play RedApple again.", Game.Result.SUCCESS, game.play(joe, apple));
+		assertEquals("Joe should have triggered apple played event again.", 7, cel.applePlayedEventCounter);
+		assertTrue("Everyone has played apples but Fred.", game.getPlayersWhoHaveNotPlayedRedApples().contains(fred));
+		assertTrue("Only Fred has not played red apples.", game.getPlayersWhoHaveNotPlayedRedApples().size() == 1);
+		
+		/* Two points needed to win game. */
+		assertTrue("Despite Fred not playing, we can judge now.", game.isTimeToJudge());
+		assertEquals("Judgement should succeed.", Game.Result.SUCCESS, game.judge(apple));
+		assertEquals("Round won by multiple players event should have been fired.", 2, cel.roundWonByMultiplePlayersEventCounter);
+//		assertEquals("Game won by multiple players event should have been fired.", 1, cel.gameWonByMultiplePlayersEventCounter);
+//		assertFalse("Joe should have been awarded green apple.", joe.getGreenApples().isEmpty());
+//		assertFalse("Caleb should have been awarded green apple.", caleb.getGreenApples().isEmpty());
+//		assertFalse("Joshua should have been awarded green apple.", joshua.getGreenApples().isEmpty());
+//		assertFalse("Patrick should have been awarded green apple.", patrick.getGreenApples().isEmpty());
+//		assertTrue("Fred should not have been awarded green apple.", fred.getGreenApples().isEmpty());
+//		assertTrue("Katie should not have been awarded green apple.", katie.getGreenApples().isEmpty());
 		// TODO finish
 	}
 	
 	@Test
 	public void testTerminateGame() {
 		CountingEventListener cel = new CountingEventListener();
-		GameConfiguration config = new EZGameConfiguration(false, false, 1, 1, 1, 1, true, false, false);
+		GameConfiguration config = new EZGameConfiguration(false, false, 1, 2, 2, 2, true, false, false);
 		Game game = new Game(cel, config, redApples, greenApples);
 		
 		assertEquals("Can't terminate a newgame.", Game.Result.ERROR_PROHIBITED, game.terminate());
 		assertEquals("Terminate event shouldn't have been fired.", 0, cel.gameTerminatedEventCounter);
 		
 		game.join("joe");
+		assertEquals("Can't terminate an game unable to start.", Game.Result.ERROR_PROHIBITED, game.terminate());
+		game.join("katie");
+		assertTrue("Game can start now.", game.isReadyToStart());
 		assertEquals("Can't terminate an unstarted game.", Game.Result.ERROR_PROHIBITED, game.terminate());
 				
-		game.startRound();
+		assertEquals("Game should be able to start.", Game.Result.SUCCESS, game.startRound());
 		assertEquals("Can terminate an started game.", Game.Result.SUCCESS, game.terminate());
 		assertEquals("Terminate event should have been fired.", 1, cel.gameTerminatedEventCounter);
 		
@@ -682,7 +744,17 @@ public class GameTest {
 	
 	@Test
 	public void testDeclareWinner() {
-		
+		// TODO
+	}
+	
+	@Test
+	public void testPointsFixedAtStart() {
+		// TODO
+	}
+	
+	@Test
+	public void testPointsNeededToWinChanging() {
+		// TODO
 	}
 	
 	@Test
