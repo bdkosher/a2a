@@ -8,10 +8,7 @@ package com.ourbabywolf.apples2apples;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Represents a player in the Apples2Apples game and keeps track of the
@@ -32,8 +29,11 @@ public class Player {
     /** The RedApples (nouns) comprising the players playable hand. */
     private final List<RedApple> hand;
     
-    /** The GreenApple (adjectives) the player has won mapped to the RedApples used to win them. */
-    private final Map<GreenApple, RedApple> greenAppleMap;
+    /** The GreenApple (adjectives) the player has won. */
+    private final List<GreenApple> greenApples;
+    
+    /** The RedApples player has played resulting in earning GreenApple points. */
+    private final List<RedApple> winningRedApples;
     
     /** The number of rounds the player has played. */
     private int roundsPlayed = 0;
@@ -64,7 +64,8 @@ public class Player {
         this.id = id;
         this.nick = nick;
         this.hand = new ArrayList<RedApple>();
-        this.greenAppleMap = new HashMap<GreenApple, RedApple>();
+        this.greenApples = new ArrayList<GreenApple>();
+        this.winningRedApples = new ArrayList<RedApple>();
     }
     
     /** 
@@ -205,22 +206,40 @@ public class Player {
     /**
      * Returns the point cards the player has been awarded. 
      */
-    public Set<GreenApple> getGreenApples() {
-        return Collections.unmodifiableSet(greenAppleMap.keySet());
+    public List<GreenApple> getGreenApples() {
+        return Collections.unmodifiableList(greenApples);
+    }
+    
+    /**
+     * Returns the RedApple that was played to win the given
+     * GreenApple.
+     * 
+     * @param greenApple
+     * @return null if the GreenApple hasn't
+     * 		been won by this player
+     */
+    public RedApple getWinningRedApple(GreenApple greenApple) {
+    	final int index = greenApples.indexOf(greenApple);
+    	return index < 0 ? null : winningRedApples.get(index);
     }
     
     /**
      * Returns the number of point cards player has earned.
      */
     public int getPoints() {
-       return greenAppleMap == null ? 0 : greenAppleMap.size(); 
+       return greenApples.size(); 
     }
     
     /**
      * Adds the card to this players points pile.
+     * 
+     * @param point - the GreenApple won
+     * @param winner - the RedApple played that was selected as the
+     * 		winner by the judge.
      */
     protected void awardPoint(GreenApple point, RedApple winner) {
-        greenAppleMap.put(point, winner);
+        greenApples.add(point);
+        winningRedApples.add(winner);
     }
     
     /**
@@ -228,9 +247,8 @@ public class Player {
      * has been awarded.
      */
     protected void clearPoints() {
-		if (greenAppleMap != null) {
-			greenAppleMap.clear();
-		}
+		greenApples.clear();
+		winningRedApples.clear();
 	}
     
     /**

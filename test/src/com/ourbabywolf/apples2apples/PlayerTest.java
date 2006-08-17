@@ -10,7 +10,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
@@ -131,7 +133,22 @@ public class PlayerTest {
 		assertEquals("two apple hand w/ dups should return correct apple by idx 0.", ra, katie.getAppleFromHand(0));
 		assertEquals("two apple hand w/ dups should return correct apple by idx 1.", ra, katie.getAppleFromHand(1));
 		assertEquals("two apple hand w/ dups should return correct apple by word.", ra, katie.getAppleFromHand(word));
-		
+	}
+	
+	@Test
+	public void testGetWinningRedApples() {
+		Player p = new Player("bob");
+		assertNull(p.getWinningRedApple(new GreenApple("bogus")));
+		int size = 0;
+		Map<GreenApple, RedApple> map = new HashMap<GreenApple, RedApple>(size);
+		for (; size < 3; ++size) {
+			String word = "word" + size;
+			GreenApple green = new GreenApple(word);
+			RedApple red = new RedApple(word); 
+			map.put(green, red);
+			p.awardPoint(green, red);
+			assertEquals(size + ": getWinningRed() apple returned wrong value.", red, p.getWinningRedApple(green));
+		}
 	}
 	
 }
