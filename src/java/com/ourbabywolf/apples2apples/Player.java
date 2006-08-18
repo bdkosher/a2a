@@ -198,7 +198,7 @@ public class Player {
      */
     protected void dealApple(RedApple apple) {
     	if (apple == null) {
-    		throw new IllegalArgumentException("Apple cannot be null.");
+    		throw new IllegalArgumentException("RedApple cannot be null.");
     	}
         hand.add(apple);
     }
@@ -219,6 +219,9 @@ public class Player {
      * 		been won by this player
      */
     public RedApple getWinningRedApple(GreenApple greenApple) {
+    	if (greenApple == null) {
+    		throw new IllegalArgumentException("GreenApple argument cannot be null.");
+    	}
     	final int index = greenApples.indexOf(greenApple);
     	return index < 0 ? null : winningRedApples.get(index);
     }
@@ -238,6 +241,11 @@ public class Player {
      * 		winner by the judge.
      */
     protected void awardPoint(GreenApple point, RedApple winner) {
+    	if (point == null) {
+    		throw new IllegalArgumentException("GreenApple argument cannot be null.");
+    	} else if (winner == null) {
+    		throw new IllegalArgumentException("RedApple argument cannot be null.");
+    	}
         greenApples.add(point);
         winningRedApples.add(winner);
     }
