@@ -151,4 +151,17 @@ public class PlayerTest {
 		}
 	}
 	
+	@Test
+	public void testGetPoints() {
+		Player p = new Player("foo");
+		assertEquals("Player should have no points.", 0, p.getPoints());
+		p.awardPoint(new GreenApple("hello"), new RedApple("yo"));
+		assertEquals("Player should have one point.", 1, p.getPoints());
+		assertEquals("Player should have won 'hello'", new GreenApple("hello"), p.getGreenApples().get(0));
+		p.awardPoint(new GreenApple("goodbye"), new RedApple("yo"));
+		assertEquals("Player should have two points.", 2, p.getPoints());
+		assertEquals("Player should have won 'goodbye'", new GreenApple("goodbye"), p.getGreenApples().get(1));
+		
+	}
+	
 }
