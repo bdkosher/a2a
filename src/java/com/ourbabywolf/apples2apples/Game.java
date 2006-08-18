@@ -119,7 +119,7 @@ public class Game {
 	private Deck<GreenApple> greenApples;
 
 	/** The mapping of players to the cards they've submitted for judgement. */
-	protected final Map<Player, RedApple> applesToJudge;
+	private final Map<Player, RedApple> applesToJudge;
 
 	/** The number of points needed to win. if 0 or less, unlimited. */
 	private int pointsNeededToWin = 0;
@@ -222,9 +222,10 @@ public class Game {
 	 */
 	private void verifyNbrOfPointsNeededToWinConfig() throws GameConfigurationException {
 		final int minNumberOfPoints = 1;
-		if (config.getPointsNeededToWin(players.size()) < minNumberOfPoints) {
+		if (pointsNeededToWin < minNumberOfPoints &&
+				pointsNeededToWin >= 0) {
 			throw new GameConfigurationException(players.size(), 
-					this.config.getCardsPerHand(), minNumberOfPoints);
+					pointsNeededToWin, minNumberOfPoints);
 		}
 	}
 
@@ -686,8 +687,8 @@ public class Game {
 			 * set.
 			 */
 			public int compare(Player p1, Player p2) {
-				int difference = p1.getPoints() - p2.getPoints();
-				return difference != 0 ? difference : 1;
+				int difference = p2.getPoints() - p1.getPoints();
+				return difference == 0 ? p1.hashCode() - p2.hashCode() : difference;
 			}
 		});
 		sorted.addAll(players);
@@ -752,24 +753,31 @@ public class Game {
 	 */
 	public void checkForGameWinner(boolean forceDeclaration) {
 		if (isStarted()) {
-			if (pointsNeededToWin > 0 || forceDeclaration) {
-				Set<Player> sorted = getPlayersSortedByPoints();
-				Set<Player> winners = new HashSet<Player>(players.size());
-				Player winner = null;
-				for (Player p : sorted) {
-					if (winner == null || winner.getPoints() == p.getPoints()) {
-						winner = p;
-						winners.add(p);
-					}
+			/* Get the player(s) with the most points */
+			Set<Player> sorted = getPlayersSortedByPoints();
+			Set<Player> potentialWinners = new HashSet<Player>(players.size());
+			Player potentialWinner = null;
+			for (Player p : sorted) {
+				/* A null potential winner is the first in the list, and therefore has the highest points. */
+				if (potentialWinner == null || potentialWinner.getPoints() == p.getPoints()) {
+					potentialWinner = p;
+					//log.info("Player " + p + " has " + p.getPoints() + " points.");
+					potentialWinners.add(p);
+				} else {
+					/* The moment we have a player with points less than that of the potential
+					 * winner, we have no need to continue iterating through the list. */
+					break;
 				}
-				if (winner.getPoints() >= pointsNeededToWin || forceDeclaration) {
-					if (winners.size() == 1) {
-						eventListener.gameWon(winner);
-					} else {
-						eventListener.gameWonByMultiplePlayers(winners);
-					}
-					phase = GamePhase.GAME_OVER;
+			}
+			if (potentialWinner.getPoints() >= pointsNeededToWin || forceDeclaration) {
+				if (potentialWinners.size() == 1) {
+					eventListener.gameWon(potentialWinner);
+					winners.add(potentialWinner);
+				} else {
+					eventListener.gameWonByMultiplePlayers(potentialWinners);
+					winners.addAll(potentialWinners);
 				}
+				phase = GamePhase.GAME_OVER;
 			}
 		}
 	}
@@ -888,12 +896,22 @@ public class Game {
 		}
 		replenishHands();
 		if (!isStarted() && config.fixPointsNeededToWinAtStart()) {
-			verifyNbrOfPointsNeededToWinConfig();
 			pointsNeededToWin = config.getPointsNeededToWin(players.size());
+			verifyNbrOfPointsNeededToWinConfig();
 		}
-		setJudge();
+		
+		/* Don't want to set the judge to an inactive player? */
+		int maxAttempts = players.size() + 1; // the +1 allows the judges to be rotated back to the first new judge, should everyone be inactive
+		do {
+			setJudge();
+			--maxAttempts;
+		} while (judge != null && !judge.isActive() 
+				&& maxAttempts > 0 /*&& config.rotatePastInactiveJudges()*/);
+			
 		if (judge == null) {
 			return Result.ERROR_GAME_UNINITIALIZED;
+		} else if (!judge.isActive()) {
+			suspendPlay(null);
 		}
 		drawGreenApple();
 		applesToJudge.clear();
@@ -998,7 +1016,10 @@ public class Game {
 		if (!judge.isActive()) {
 			activatePlayer(judge);
 		}
-		/* there's a possibility mulitple players played the same apple. */
+		/* End the round. */
+		phase = GamePhase.ROUND_OVER;
+		++roundsPlayed;
+		/* Check for winners...there's a possibility mulitple players played the same apple. */
 		Set<Player> winners = new HashSet<Player>(players.size());
 		for (Player p : applesToJudge.keySet()) {
 			if (selected.equals(applesToJudge.get(p))) {
@@ -1010,16 +1031,19 @@ public class Game {
 		}
 		if (winners.isEmpty()) { /* not sure why this would happen. */
 			return Result.ERROR_INVALID_PARAMETER;
-		} else if (winners.size() == 1) {
-			eventListener.roundWon(judge, winners.iterator().next(), selected, greenApple);
 		} else {
-			eventListener.roundWonByMultiplePlayers(judge, winners, selected, greenApple);
+			if (winners.size() == 1) {
+				eventListener.roundWon(judge, winners.iterator().next(), selected, greenApple);
+			} else {
+				eventListener.roundWonByMultiplePlayers(judge, winners, selected, greenApple);
+			}
+			/* if points needed to win < 0, assume that winner has to be declared manually. */
+			if (pointsNeededToWin >= 0) {
+				checkForGameWinner(false);
+			}
 		}
-		
-		/* End the round. */
-		phase = GamePhase.ROUND_OVER;
-		++roundsPlayed;
-		if (config.autoStartRound()) {
+		/* If the game hasn't ended and auto start is enabled, start next round. */
+		if (!isOver() && config.autoStartRound()) {
 			startRound();
 		}
 		return Result.SUCCESS;

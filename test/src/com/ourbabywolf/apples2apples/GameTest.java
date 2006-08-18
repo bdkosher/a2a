@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -395,6 +396,41 @@ public class GameTest {
 	}
 	
 	@Test
+	public void testGetPlayersSortedByPoints() {
+		CountingEventListener cel = new CountingEventListener();
+		GameConfiguration config = new EZGameConfiguration(false, false, 1, 15, 3, 1, false, true, false);
+		Game game = new Game(cel, config, redApples, greenApples);
+		assertTrue("No players.", game.getPlayersSortedByPoints().isEmpty());
+		
+		game.join("joe");
+		Player joe = game.getPlayer("joe");
+		assertEquals("Joe has no points.", 0, joe.getPoints());
+		assertTrue("The only player is Joe.", game.getPlayersSortedByPoints().containsAll(game.getPlayers()));
+		
+		game.join("katie");
+		Player katie = game.getPlayer("katie");
+		assertEquals("Katie has no points.", 0, katie.getPoints());
+		assertTrue("The players are Katie and Joe.", game.getPlayersSortedByPoints().containsAll(game.getPlayers()));
+		
+		katie.awardPoint(new GreenApple("pointy"), new RedApple("point"));
+		Iterator it = game.getPlayersSortedByPoints().iterator();
+		assertEquals("Katie should be the first in the list.", katie, it.next());
+		assertEquals("Joe should be the next in the list.", joe, it.next());
+		
+		joe.awardPoint(new GreenApple("pointy"), new RedApple("point"));
+		joe.awardPoint(new GreenApple("pointy2"), new RedApple("point2"));
+		it = game.getPlayersSortedByPoints().iterator();
+		assertEquals("Joe should be the first in the list.", joe, it.next());
+		assertEquals("Katie should be the next in the list.", katie, it.next());
+		
+		katie.awardPoint(new GreenApple("pointy"), new RedApple("point"));
+		katie.awardPoint(new GreenApple("pointy2"), new RedApple("point2"));
+		it = game.getPlayersSortedByPoints().iterator();
+		assertEquals("Katie should be the first in the list again.", katie, it.next());
+		assertEquals("Joe should be the next in the list again.", joe, it.next());
+	}
+	
+	@Test
 	public void testIndirectReactivation() {
 		// TODO - if you play, you become active.  If you judge and you're the judge, you become active
 	}
@@ -547,12 +583,12 @@ public class GameTest {
 		/* end this round */
 		assertEquals("Judgement should succeed.", Game.Result.SUCCESS, game.judge(apple));
 		assertEquals("Round won by multiple players event should have been fired.", 1, cel.roundWonByMultiplePlayersEventCounter);
-		assertFalse("Joe should have been awarded green apple.", joe.getGreenApples().isEmpty());
-		assertFalse("Caleb should have been awarded green apple.", caleb.getGreenApples().isEmpty());
-		assertFalse("Joshua should have been awarded green apple.", joshua.getGreenApples().isEmpty());
-		assertTrue("Fred should not have been awarded green apple.", fred.getGreenApples().isEmpty());
-		assertTrue("Patrick should not have been awarded green apple.", patrick.getGreenApples().isEmpty());
-		assertTrue("Katie should not have been awarded green apple.", katie.getGreenApples().isEmpty());
+		assertEquals("Joe should have been awarded green apple.", 1, joe.getGreenApples().size());
+		assertEquals("Caleb should have been awarded green apple.", 1, caleb.getGreenApples().size());
+		assertEquals("Joshua should have been awarded green apple.", 1, joshua.getGreenApples().size());
+		assertEquals("Fred should not have been awarded green apple.", 0, fred.getGreenApples().size());
+		assertEquals("Patrick should not have been awarded green apple.", 0, patrick.getGreenApples().size());
+		assertEquals("Katie should not have been awarded green apple.", 0, katie.getGreenApples().size());
 		
 		/* and start a new one */
 		game.startRound();
@@ -578,18 +614,28 @@ public class GameTest {
 		assertTrue("Everyone has played apples but Fred.", game.getPlayersWhoHaveNotPlayedRedApples().contains(fred));
 		assertTrue("Only Fred has not played red apples.", game.getPlayersWhoHaveNotPlayedRedApples().size() == 1);
 		
+		assertTrue("There should be no winners.", game.getWinners().isEmpty());
+		
 		/* Two points needed to win game. */
 		assertTrue("Despite Fred not playing, we can judge now.", game.isTimeToJudge());
 		assertEquals("Judgement should succeed.", Game.Result.SUCCESS, game.judge(apple));
 		assertEquals("Round won by multiple players event should have been fired.", 2, cel.roundWonByMultiplePlayersEventCounter);
-//		assertEquals("Game won by multiple players event should have been fired.", 1, cel.gameWonByMultiplePlayersEventCounter);
-//		assertFalse("Joe should have been awarded green apple.", joe.getGreenApples().isEmpty());
-//		assertFalse("Caleb should have been awarded green apple.", caleb.getGreenApples().isEmpty());
-//		assertFalse("Joshua should have been awarded green apple.", joshua.getGreenApples().isEmpty());
-//		assertFalse("Patrick should have been awarded green apple.", patrick.getGreenApples().isEmpty());
-//		assertTrue("Fred should not have been awarded green apple.", fred.getGreenApples().isEmpty());
-//		assertTrue("Katie should not have been awarded green apple.", katie.getGreenApples().isEmpty());
-		// TODO finish
+		assertEquals("Game won by multiple players event should have been fired.", 1, cel.gameWonByMultiplePlayersEventCounter);
+		assertEquals("Joe should have been awarded green apple.", 2, joe.getGreenApples().size());
+		assertEquals("Caleb should have been awarded green apple.", 2, caleb.getGreenApples().size());
+		assertEquals("Joshua should have been awarded green apple.", 2, joshua.getGreenApples().size());
+		assertEquals("Patrick should have been awarded green apple.", 1, patrick.getGreenApples().size());
+		assertEquals("Fred should not have been awarded green apple.", 0, fred.getGreenApples().size());
+		assertEquals("Katie should not have been awarded green apple.", 0, katie.getGreenApples().size());
+		
+		assertTrue("Game should be over now.", game.isOver());
+		assertTrue("Joe's a winner.", game.getWinners().contains(joe));
+		assertTrue("Caleb's a winner.", game.getWinners().contains(caleb));
+		assertTrue("Joshua's a winner.", game.getWinners().contains(joshua));
+		
+		assertEquals("Can't play apples when game is over and you won.", Game.Result.ERROR_PROHIBITED, game.play(joe, apple));
+		assertEquals("Can't play apples when game is over and you didn't win.", Game.Result.ERROR_PROHIBITED, game.play(fred, apple));
+		
 	}
 	
 	@Test
@@ -618,7 +664,7 @@ public class GameTest {
 	@Test
 	public void testSetJudgeRotated() {
 		CountingEventListener cel = new CountingEventListener();
-		GameConfiguration config = new EZGameConfiguration(false, false, 1, 4, 3, 1, true, false, false);
+		GameConfiguration config = new EZGameConfiguration(false, false, 1, 4, 3, 2, true, false, false);
 		Game game = new Game(cel, config, redApples, greenApples);
 		
 		game.join("joe");
@@ -706,7 +752,7 @@ public class GameTest {
 	@Test
 	public void testSetJudgeFixed() {
 		CountingEventListener cel = new CountingEventListener();
-		GameConfiguration config = new EZGameConfiguration(false, false, 1, 4, 2, 1, false, false, false);
+		GameConfiguration config = new EZGameConfiguration(false, false, 1, 4, 2, 2, false, false, false);
 		Game game = new Game(cel, config, redApples, greenApples);
 		
 		assertEquals("Can't set judge to nonexistent player.", Game.Result.ERROR_INVALID_PARAMETER, game.setJudge(new Player("bob")));
@@ -754,6 +800,11 @@ public class GameTest {
 	
 	@Test
 	public void testPointsNeededToWinChanging() {
+		// TODO
+	}
+	
+	@Test
+	public void testSuspendAndResumeGame() {
 		// TODO
 	}
 	
@@ -900,6 +951,11 @@ public class GameTest {
 	
 	@Test
 	public void testJoinAndLeaveDuringGame() {
+		// TODO
+	}
+	
+	@Test
+	public void testSetJudgeWhenEveryoneIsInactive() {
 		// TODO
 	}
 
