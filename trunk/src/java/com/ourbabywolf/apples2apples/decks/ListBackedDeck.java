@@ -15,7 +15,7 @@ import com.ourbabywolf.apples2apples.Deck;
  *
  * @param <AppleType>
  */
-public class ListBackedDeck<AppleType extends Apple> implements Deck {
+public class ListBackedDeck<AppleType extends Apple> implements Deck<AppleType> {
 	
 	/** Holds the apples. */
 	private final List<AppleType> apples;
@@ -34,16 +34,40 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck {
 	 * @param selfReplenishing - if true, the apples will never run out
 	 */
 	public ListBackedDeck(boolean selfReplenishing) {
-		this (selfReplenishing, null);
+		this (selfReplenishing, -1, null);
+	}
+	
+	/** 
+	 * Creates a new deck w/o a description.  The given int is used
+	 * to indicate the capacity of the underlying list supporting
+	 * the deck.
+	 * 
+	 * @param selfReplenishing - if true, the apples will never run out
+	 * @param capacity - the capacity of the underlying List supporting the deck
+	 */
+	public ListBackedDeck(boolean selfReplenishing, int capacity) {
+		this (selfReplenishing, capacity, null);
+	}
+	
+	/** 
+	 * Creates a new deck w/ the given description.  The default capacity
+	 * is used for the underlying list supporting the deck.
+	 * 
+	 * @param selfReplenishing - if true, the apples will never run out
+	 * @param description - the deck's description.
+	 */
+	public ListBackedDeck(boolean selfReplenishing, String description) {
+		this (selfReplenishing, -1, description);
 	}
 	
 	/**
 	 * Creates a new Deck with the given description.
 	 * @param description - the deck's description.
 	 * @param selfReplenishing - if true, the apples will never run out
+	 * @param capacity - the capacity of the underlying List supporting the deck 
 	 */
-	public ListBackedDeck(boolean selfReplenishing, String description) {
-		this.apples = new ArrayList<AppleType>();
+	public ListBackedDeck(boolean selfReplenishing, int capacity, String description) {
+		this.apples = capacity < 0 ? new ArrayList<AppleType>() : new ArrayList<AppleType>(capacity);
 		this.selfReplenishing = selfReplenishing;
 		this.description = description;
 	}
@@ -63,15 +87,12 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck {
 	 */
 	public AppleType draw() {
 		if (selfReplenishing) {
-			return it.hasNext() ? it.next() : null;
-		} else {
-			if (it.hasNext()) {
-				AppleType apple = it.next();
-				it.remove();
-				return apple;
-			} else {
-				return null;
+			if (it == null || !it.hasNext()) {
+				it = apples.iterator();
 			}
+			return it.next();
+		} else {
+			return !apples.isEmpty() ? apples.remove(0) : null;
 		}
 	}
 
@@ -81,6 +102,13 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck {
 	 */
 	public String getDescription() {
 		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	/**

@@ -40,58 +40,11 @@ public class SAXApplesReader {
 	/** Holds the value of the printing attribute of the XML doc. */
 	private String printing = null;
 	
-	/** The list of apples generated from the XML input source. */
-	private final List<Apple> apples; 
+	/** The list of red apples generated from the XML input source. */
+	private final List<RedApple> redApples;
 	
-	/*private class LoggingHandler extends DefaultHandler {
-
-		@Override
-		public void characters(char[] ch, int start, int length) throws SAXException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("characters\n\t");
-			sb.append(new String(ch, start, length));
-			log.finer(sb.toString());
-		}
-
-		@Override
-		public void endDocument() throws SAXException {
-			log.finer("EndDocument");
-		}
-
-		@Override
-		public void endElement(String uri, String localName, String qName) throws SAXException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("EndElement\n\t");
-			sb.append("URI: ").append(uri);
-			sb.append("\n\tLocalName: ").append(localName);
-			sb.append("\n\tQName: ").append(qName);
-			log.finer(sb.toString());
-		}
-
-		@Override
-		public void startDocument() throws SAXException {
-			log.finer("StartDocument");
-		}
-
-		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("StartElement\n\t");
-			sb.append("URI: ").append(uri);
-			sb.append("\n\tLocalName: ").append(localName);
-			sb.append("\n\tQName: ").append(qName);
-			sb.append("\n\tAttributes:");
-			if (attributes == null) {
-				sb.append("null");
-			} else {
-				for (int i = 0; i < attributes.getLength(); ++i) {
-					sb.append(attributes.getValue(i)).append(" ");
-				}
-			}
-			log.finer(sb.toString());
-		}
-		
-	}*/
+	/** The list of red apples generated from the XML input source. */
+	private final List<GreenApple> greenApples;
 	
 	/**
 	 * Contains the rules used to generate Apples from XML markup.
@@ -147,14 +100,14 @@ public class SAXApplesReader {
 						RedApple a = (RedApple)apple;
 						a.setQuip(quipBuilder.toString());
 						log.finer("Finalizing RedApple \"" + a.getWord() + "\"and adding to list. Quip=\n\t" + a.getQuip());
-						apples.add(apple);
+						redApples.add(a);
 						apple = null;
 						quipBuilder = null;
 					}
 				} else if (apple instanceof GreenApple 
 						&& "green".equalsIgnoreCase(qName)) {
 					log.finer("Finalizing GreenApple and adding to list.");
-					apples.add(apple);
+					greenApples.add((GreenApple)apple);
 					apple = null;
 				}
 			}
@@ -193,7 +146,8 @@ public class SAXApplesReader {
 	 */
 	public SAXApplesReader(InputStream source) 
 			throws ParserConfigurationException, SAXException, IOException {
-		this.apples = new ArrayList<Apple>();
+		this.redApples = new ArrayList<RedApple>();
+		this.greenApples = new ArrayList<GreenApple>();
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		factory.setValidating(false);
 		factory.setNamespaceAware(false);
@@ -203,10 +157,17 @@ public class SAXApplesReader {
 	}
 
 	/**
-	 * @return the apples
+	 * @return the red apples
 	 */
-	public List<Apple> getApples() {
-		return apples;
+	public List<RedApple> getRedApples() {
+		return redApples;
+	}
+	
+	/**
+	 * @return the green apples
+	 */
+	public List<GreenApple> getGreenApples() {
+		return greenApples;
 	}
 
 	/**
