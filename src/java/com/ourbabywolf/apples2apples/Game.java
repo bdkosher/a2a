@@ -121,7 +121,7 @@ public class Game {
 	/** The mapping of players to the cards they've submitted for judgement. */
 	private final Map<Player, RedApple> applesToJudge;
 
-	/** The number of points needed to win. if 0 or less, unlimited. */
+	/** The number of points needed to win. If 0 or less, unlimited. */
 	private int pointsNeededToWin = 0;
 
 	/**
@@ -210,22 +210,6 @@ public class Game {
 		if (config.getMaxNbrOfPlayers() < maxNumberOfPlayers) {
 			throw new GameConfigurationException("Maximum number of players",
 					config.getMaxNbrOfPlayers(), maxNumberOfPlayers);
-		}
-	}
-	
-	/**
-	 * Verifies that the GameConfiguration in regards to the number of points
-	 * needed to win is OK.
-	 * 
-	 * @throws Exception - if there is something wrong with the
-	 * 		configuration.
-	 */
-	private void verifyNbrOfPointsNeededToWinConfig() throws GameConfigurationException {
-		final int minNumberOfPoints = 1;
-		if (pointsNeededToWin < minNumberOfPoints &&
-				pointsNeededToWin >= 0) {
-			throw new GameConfigurationException(players.size(), 
-					pointsNeededToWin, minNumberOfPoints);
 		}
 	}
 
@@ -389,7 +373,6 @@ public class Game {
 					pointsNeededToWin = newPointsNeededToWin;
 					/* If for some reason the points drop, check if there's a winner. */
 					if (isStarted()) {
-						verifyNbrOfPointsNeededToWinConfig();
 						checkForGameWinner(false);
 					}
 				}
@@ -896,8 +879,11 @@ public class Game {
 		}
 		replenishHands();
 		if (!isStarted() && config.fixPointsNeededToWinAtStart()) {
+			int oldPointsNeededToWin = pointsNeededToWin;
 			pointsNeededToWin = config.getPointsNeededToWin(players.size());
-			verifyNbrOfPointsNeededToWinConfig();
+			if (pointsNeededToWin != oldPointsNeededToWin) {
+				eventListener.pointsNeededToWinChanged(pointsNeededToWin, oldPointsNeededToWin);
+			}
 		}
 		
 		/* Don't want to set the judge to an inactive player? */
@@ -1037,8 +1023,8 @@ public class Game {
 			} else {
 				eventListener.roundWonByMultiplePlayers(judge, winners, selected, greenApple);
 			}
-			/* if points needed to win < 0, assume that winner has to be declared manually. */
-			if (pointsNeededToWin >= 0) {
+			/* if points needed to win < 1, winner has to be declared manually. */
+			if (pointsNeededToWin > 0) {
 				checkForGameWinner(false);
 			}
 		}

@@ -795,12 +795,96 @@ public class GameTest {
 	
 	@Test
 	public void testPointsFixedAtStart() {
-		// TODO
+		GameConfiguration config = new DefaultGameConfiguration() {
+			@Override
+			public int getPointsNeededToWin(int nbrOfPlayers) {
+				return nbrOfPlayers;
+			}
+			@Override
+			public boolean fixPointsNeededToWinAtStart() {
+				return true;
+			}
+			@Override
+			public int getMinNbrOfPlayers() {
+				return 2;
+			}
+			@Override
+			public boolean playersCanJoinDuringGame() {
+				return true;
+			}
+			@Override
+			public boolean autoStartRound() {
+				return false;
+			}
+		};
+		CountingEventListener cel = new CountingEventListener();
+		Game game = new Game(cel, config, redApples, greenApples);
+		game.join("joe");
+		assertEquals("Points changed event should not be called.", 0, cel.pointsNeededToWinChangedEventCounter);
+		Player joe = game.getPlayer("joe");
+		game.join("katie");
+		assertEquals("Points changed event should not be called.", 0, cel.pointsNeededToWinChangedEventCounter);
+		Player katie = game.getPlayer("katie");
+		game.startRound();
+		assertEquals("Points changed event should be called at start.", 1, cel.pointsNeededToWinChangedEventCounter);
+		int nbrOfPlayersAtStart = game.getPlayers().size();
+		
+		assertEquals("At start, should be " + nbrOfPlayersAtStart, nbrOfPlayersAtStart, game.getPointsNeededToWin());
+		game.join("joshua");
+		assertEquals("Points changed event should not be called.", 1, cel.pointsNeededToWinChangedEventCounter);
+		assertEquals("After Joshua joins, should be " + nbrOfPlayersAtStart, nbrOfPlayersAtStart, game.getPointsNeededToWin());
+		game.join("caleb");
+		assertEquals("Points changed event should not be called.", 1, cel.pointsNeededToWinChangedEventCounter);
+		assertEquals("After Caleb joins, should be " + nbrOfPlayersAtStart, nbrOfPlayersAtStart, game.getPointsNeededToWin());
+		game.leave(game.getJudge() == katie ? joe : katie);
+		assertEquals("Points changed event should not be called.", 1, cel.pointsNeededToWinChangedEventCounter);
+		assertEquals("After player leaves, should be " + nbrOfPlayersAtStart, nbrOfPlayersAtStart, game.getPointsNeededToWin());
 	}
 	
 	@Test
 	public void testPointsNeededToWinChanging() {
-		// TODO
+		GameConfiguration config = new DefaultGameConfiguration() {
+			@Override
+			public int getPointsNeededToWin(int nbrOfPlayers) {
+				return nbrOfPlayers;
+			}
+			@Override
+			public boolean fixPointsNeededToWinAtStart() {
+				return false;
+			}
+			@Override
+			public int getMinNbrOfPlayers() {
+				return 2;
+			}
+			@Override
+			public boolean playersCanJoinDuringGame() {
+				return true;
+			}
+			@Override
+			public boolean autoStartRound() {
+				return false;
+			}
+		};
+		CountingEventListener cel = new CountingEventListener();
+		Game game = new Game(cel, config, redApples, greenApples);
+		game.join("joe");
+		assertEquals("Points changed event should be called.", 1, cel.pointsNeededToWinChangedEventCounter);
+		Player joe = game.getPlayer("joe");
+		game.join("katie");
+		assertEquals("Points changed event should be called.", 2, cel.pointsNeededToWinChangedEventCounter);
+		Player katie = game.getPlayer("katie");
+		game.startRound();
+		
+		assertEquals("At start, should be " + game.getPlayers().size(), game.getPlayers().size(), game.getPointsNeededToWin());
+		game.join("joshua");
+		assertEquals("After Joshua joins, should be " + game.getPlayers().size(), game.getPlayers().size(), game.getPointsNeededToWin());
+		assertEquals("Points changed event should be called.", 3, cel.pointsNeededToWinChangedEventCounter);
+		game.join("caleb");
+		assertEquals("After Caleb joins, should be " + game.getPlayers().size(), game.getPlayers().size(), game.getPointsNeededToWin());
+		assertEquals("Points changed event should be called.", 4, cel.pointsNeededToWinChangedEventCounter);
+		game.leave(game.getJudge() == katie ? joe : katie);
+		assertEquals("After player leaves, should be " + game.getPlayers().size(), game.getPlayers().size(), game.getPointsNeededToWin());
+		assertEquals("Points changed event should be called.", 5, cel.pointsNeededToWinChangedEventCounter);
 	}
 	
 	@Test
@@ -946,7 +1030,14 @@ public class GameTest {
 	
 	@Test
 	public void testJoinAndLeaveDuringGameWhenProhibited() {
-		// TODO
+		CountingEventListener cel = new CountingEventListener();
+		GameConfiguration config = new EZGameConfiguration(true, false, 1, 4, 2, 1, true, false, false);
+		Game game = new Game(cel, config, redApples, greenApples);
+		assertEquals("Joe can join.", Game.Result.SUCCESS, game.join("joe"));
+		assertEquals("Katie can join.", Game.Result.SUCCESS, game.join("katie")); // game will autostart since the min number of players have joined.
+		assertEquals("Patrick can't join.", Game.Result.ERROR_PROHIBITED, game.join("patrick"));
+		/* prohibited overrides no-effect...no biggie */
+		//assertEquals("Joe joining has no effect.", Game.Result.NO_EFFECT, game.join("joe"));
 	}
 	
 	@Test
@@ -955,7 +1046,7 @@ public class GameTest {
 	}
 	
 	@Test
-	public void testSetJudgeWhenEveryoneIsInactive() {
+	public void testSetJudgeWhenInactive() {
 		// TODO
 	}
 

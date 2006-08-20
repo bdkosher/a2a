@@ -8,6 +8,13 @@ import java.util.List;
 import com.ourbabywolf.apples2apples.Apple;
 import com.ourbabywolf.apples2apples.Deck;
 
+/**
+ * A Deck implementation that supports all AppleTypes backed by a List.
+ * 
+ * @author joe@ourbabywolf.com
+ *
+ * @param <AppleType>
+ */
 public class ListBackedDeck<AppleType extends Apple> implements Deck {
 	
 	/** Holds the apples. */
