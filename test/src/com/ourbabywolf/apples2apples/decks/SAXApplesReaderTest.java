@@ -37,10 +37,10 @@ public class SAXApplesReaderTest {
 				this.getClass().getClassLoader().getResourceAsStream("red-basic-2001.xml"));
 		Logger l = LogManager.getLogManager().getLogger(SAXApplesReader.class.getName());
 		l.setLevel(Level.FINER);
-		assertNotNull("Apples shouldn't be null.", reader.getApples());
-		assertFalse("There should be some apples.", reader.getApples().isEmpty());
+		assertNotNull("Apples shouldn't be null.", reader.getRedApples());
+		assertFalse("There should be some apples.", reader.getRedApples().isEmpty());
 		log.info("*****************************");
-		for (Apple a : reader.getApples()) {
+		for (Apple a : reader.getRedApples()) {
 			log.info(a.getClass().getName() + "\t" + a.getWord());
 			if (a instanceof RedApple) {
 				log.info(((RedApple)a).getQuip());
