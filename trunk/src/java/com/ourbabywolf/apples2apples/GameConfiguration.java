@@ -38,7 +38,7 @@ public interface GameConfiguration {
     
     /** 
      * Returns the number of GreenApples needed to win. If 0 or less,
-     * it is assume game continues until GreenApple deck is exhausted
+     * it is assumed game continues until GreenApple deck is exhausted
      * or a winner is manually declared.
      *  
      * @param nbrOfPlayers - the number of players who have joined the
