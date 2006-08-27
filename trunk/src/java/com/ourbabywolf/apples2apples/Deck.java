@@ -25,10 +25,24 @@ public interface Deck<AppleType extends Apple> {
      */
     public void shuffle();
     
-    /** Takes a card off of the top of the deck or null if there are no cards left. */
+    /** 
+     * Takes a card off of the top of the deck or null if there are no cards left. 
+     * @return the drawn card 
+     */
     public AppleType draw();
     
-    /** Returns true if there are no more cards to draw. */
+    /** 
+     * Returns true if there are no more cards to draw. 
+     * @return true if the draw() method will return null 
+     */
     public boolean isExhausted();
+    
+    /**
+     * Adds the contents of the given deck to this deck.  Implementations
+     * may have side effects.
+     * 
+     * @param deck
+     */
+    public void combine(Deck<AppleType> deck);
     
 }
