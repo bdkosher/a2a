@@ -80,6 +80,15 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck<AppleType> 
 	public void add(AppleType apple) {
 		apples.add(apple);
 	}
+	
+	/**
+	 * Adds the list of apples to the deck.
+	 * 
+	 * @param appleList
+	 */
+	public void addAll(List<AppleType> appleList) {
+		apples.addAll(appleList);
+	}
 
 	/**
 	 * Returns the next element in the list. 
@@ -115,6 +124,9 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck<AppleType> 
 	 * Indicates if there are no more apples in this deck.
 	 */
 	public boolean isExhausted() {
+		if (it == null) {
+			it = apples.iterator();
+		}
 		return selfReplenishing ? false : !it.hasNext();
 	}
 
@@ -127,6 +139,18 @@ public class ListBackedDeck<AppleType extends Apple> implements Deck<AppleType> 
 	public void shuffle() {
 		Collections.shuffle(apples);
 		it = apples.iterator();
+	}
+
+	/**
+	 * Adds the apples within the given deck to this deck.
+	 */
+	public void combine(Deck<AppleType> deck) {
+		if (deck != null) {
+			AppleType a;	
+			while ((a = deck.draw()) != null) {
+				apples.add(a);
+			}
+		}
 	}
 
 }

@@ -47,9 +47,11 @@ public class GameTest {
 		}
 		public void shuffle() {
 		}
+		public void combine(Deck<AppleType> deck) {
+		}
 	}
 	
-	private static class CountingEventListener extends AbstractGameEventListener {
+	private static class CountingEventListener extends BaseGameEventListener {
 		public int applePlayedEventCounter = 0;
 		@Override
 		public void applePlayed(Player player, RedApple applePlayed) {
@@ -1050,4 +1052,13 @@ public class GameTest {
 		// TODO
 	}
 
+	@Test
+	public void testDeckExhaustedEvents() {
+		// TODO
+	}
+	
+	@Test
+	public void testMaxPlayersJoinedEvent() {
+		// TODO
+	}
 }
