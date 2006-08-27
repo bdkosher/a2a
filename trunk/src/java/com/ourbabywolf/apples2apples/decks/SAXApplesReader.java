@@ -117,16 +117,18 @@ public class SAXApplesReader {
 		public void characters(char[] ch, int start, int length) throws SAXException {
 			if (apple != null) {
 				if (apple instanceof RedApple) {
+					String chars = new String(ch, start, length).trim();
 					/* chars within red apple are part of quip. */
-					log.finer("Appending characters " + new String(ch) + " to quip.");
-					quipBuilder.append(new String(ch, start, length));
+					log.finer("Appending characters " + chars + " to quip.");
+					quipBuilder.append(chars);
 				} else if (apple instanceof GreenApple) {
-					log.finer("Adding synonyms " + new String(ch) + " to GreenApple.");
+					String chars = new String(ch, start, length).trim();
+					log.finer("Adding synonyms " + chars + " to GreenApple.");
 					/* chars withing green apple are comma-separated list of synonyms. */
 					GreenApple a = (GreenApple)apple;
-					for (StringTokenizer st = new StringTokenizer(new String(ch), ","); 
+					for (StringTokenizer st = new StringTokenizer(chars, ","); 
 							st.hasMoreTokens(); 
-							a.addSynonym(st.nextToken()));
+							a.addSynonym(st.nextToken().trim()));
 				} else {
 					/* don't know what these characters are for. */
 					log.finer("Unexpected characters encountered: " + new String(ch));
