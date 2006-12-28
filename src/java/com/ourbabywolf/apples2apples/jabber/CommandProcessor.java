@@ -16,10 +16,10 @@ public interface CommandProcessor {
     /**
      * Processes the given command from the given user.
      * 
-     * @param command
      * @param jabberId
+     * @param command
      * @param client
      */
-    public void process(String command, String jabberId, HostingClient client);
+    public void process(String jabberId, String command, HostingClient client);
     
 }
