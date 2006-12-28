@@ -112,8 +112,8 @@ public class HostingClient {
                 Message message = (Message)packet;
                 log.info("BODY: " + message.getBody());
                 log.info("Full XML: " + message.toXML());
-                processor.process(message.getBody(), extractJabberId(message
-                        .getFrom()), client);
+                processor.process(extractJabberId(message
+                        .getFrom()), message.getBody(), client);
             }
         }, new OrFilter(new MessageTypeFilter(Message.Type.CHAT),
                 new MessageTypeFilter(Message.Type.NORMAL)));
